@@ -1,6 +1,8 @@
 /* Copyright G. Hemingway, 2023 - All rights reserved */
 "use strict";
 
+const mongoose = require("mongoose");
+
 const Joi = require("joi");
 const {
   initialState,
@@ -92,11 +94,11 @@ module.exports = (app) => {
         let results = filterGameForProfile(game);
         results.start = Date.parse(results.start);
         results.cards_remaining =
-          52 -
-          (state.stack1.length +
-            state.stack2.length +
-            state.stack3.length +
-            state.stack4.length);
+            52 -
+            (state.stack1.length +
+                state.stack2.length +
+                state.stack3.length +
+                state.stack4.length);
         // Do we need to grab the moves
         if (req.query.moves === "") {
           const moves = await app.models.Move.find({ game: req.params.id });
@@ -109,6 +111,40 @@ module.exports = (app) => {
       res.status(404).send({ error: `unknown game: ${req.params.id}` });
     }
   });
+
+  app.put('/v1/game/:id', async (req, res) => {
+    const gameId = req.body.move.game;
+    if (!mongoose.Types.ObjectId.isValid(gameId)) {
+      console.error('Invalid game ID');
+      return res.status(400).send({ error: 'Invalid game ID' });
+    }
+
+    try {
+      let game = await app.models.Game.findById(gameId);
+      if (!game) {
+        console.error('Game not found');
+        return res.status(404).send({ error: 'Game not found' });
+      }
+
+      let move = req.body.move;
+      let srcPile = game.state[move.src];
+      let dstPile = game.state[move.dst];
+
+      srcPile = srcPile.filter(card => !move.cards.some(moveCard => card.suit === moveCard.suit && card.value === moveCard.value));
+      srcPile[srcPile.length - 1].up = true;
+      dstPile.push(...move.cards);
+
+      game.state[move.src] = srcPile;
+      game.state[move.dst] = dstPile;
+      await game.save();
+
+      res.status(200).send({ message: 'Game state updated successfully' });
+    } catch (error) {
+      console.error(error.message);
+      res.status(500).send({ error: error.message });
+    }
+  });
+
 
   // Provide end-point to request shuffled deck of cards and initial state - for testing
   app.get("/v1/cards/shuffle", (req, res) => {
