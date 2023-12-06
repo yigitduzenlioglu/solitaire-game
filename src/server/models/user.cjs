@@ -20,8 +20,9 @@ let User = new Schema({
   first_name: { type: String, default: "" },
   last_name: { type: String, default: "" },
   city: { type: String, default: "" },
-  hash: { type: String, required: true },
-  salt: { type: String, required: true },
+  hash: { type: String },
+  salt: { type: String },
+  github_access_token: { type: String },
   games: [{ type: Schema.Types.ObjectId, ref: "Game" }],
 });
 
@@ -43,7 +44,9 @@ User.virtual("password").set(function (password) {
 });
 
 User.method("authenticate", function (plainText) {
-  return encryptPassword(this.salt, plainText) === this.hash;
+  return this.salt != null && 
+         this.hash != null && 
+         encryptPassword(this.salt, plainText) === this.hash;
 });
 
 User.pre("save", function (next) {

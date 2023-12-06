@@ -3,6 +3,9 @@
 
 const Joi = require("joi");
 
+const CLIENT_ID = "e0b6b9399f136b75ad88";
+const CLIENT_SECRET = "ec4268821c95e3da4850f9e5734489a06c325bac";
+
 module.exports = (app) => {
   /**
    * Log a user in
@@ -48,6 +51,26 @@ module.exports = (app) => {
       console.log(`Session.login validation failure: ${message}`);
       res.status(400).send({ error: message });
     }
+  });
+
+  app.post("/v1/third_party_session", async (req, res) => {
+
+    const query_params = "?client_id=" + CLIENT_ID + "&client_secret=" + CLIENT_SECRET + "&code=" + req.query.code;
+
+    await fetch("https://github.com/login/oauth/access_token" + query_params, {
+        method: "POST",
+        headers: {
+          "accept": "application/json"
+        }
+      }
+    ).then((response) => {
+      return response.json();
+    }).then((data) => {
+      console.log("access token response", data);
+      res.status(200).json(data);
+    })
+
+    // await getGitHubUserData(token);
   });
 
   /**

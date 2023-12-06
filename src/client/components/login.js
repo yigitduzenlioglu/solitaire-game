@@ -16,10 +16,12 @@ export const Login = (props) => {
   let navigate = useNavigate();
   let [username, setUser] = useState("");
   let [password, setPass] = useState("");
+  let [loading, setLoading] = useState(false);
   let [error, setError] = useState("");
 
   const onSubmit = async (ev) => {
     ev.preventDefault();
+    setLoading(true);
     let res = await fetch("/v1/session", {
       body: JSON.stringify({
         username,
@@ -32,6 +34,8 @@ export const Login = (props) => {
       },
     });
     const data = await res.json();
+
+    setLoading(false);
     if (res.ok) {
       props.logIn(data.username);
       navigate(`/profile/${data.username}`);
@@ -40,9 +44,51 @@ export const Login = (props) => {
     }
   };
 
+  const authorizeWithGithub = (ev) => {
+    ev.preventDefault();
+    const CLIENT_ID = 'e0b6b9399f136b75ad88';
+    window.location.assign(`https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}`);
+  }
+
+  const getGitHubSession = async (code) => {
+    setLoading(true);
+
+    let res = await fetch("v1/third_party_session", {
+      body: JSON.stringify({
+        code
+      }),
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "content-type": "application/json",
+      }
+    });
+
+    const data = await res.json();
+
+    setLoading(false);
+
+    return;
+
+    if (res.ok) {
+      props.logIn(data.username);
+      navigate(`/profile/${data.username}`);
+    } else {
+      setError(`Error: ${data.error}`);
+    }
+  }
+
   useEffect(() => {
     document.getElementById("username").focus();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const gitHubCode = urlParams.get("code");
+
+    if (gitHubCode) {
+      getGitHubSession(gitHubCode);
+    }
   }, []);
+  
 
   return (
     <div style={{ gridArea: "main" }}>
@@ -71,7 +117,13 @@ export const Login = (props) => {
         <FormButton id="submitBtn" onClick={onSubmit}>
           Login
         </FormButton>
-      </FormBase>
+        <br></br>
+        <FormButton 
+          style={{ marginTop: '3px' }}
+          onClick={authorizeWithGithub}
+          >
+          Login with GitHub</FormButton>
+        </FormBase>
     </div>
   );
 };

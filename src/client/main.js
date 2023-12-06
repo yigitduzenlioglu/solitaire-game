@@ -12,6 +12,7 @@ import { Login } from "./components/login.js";
 import { Logout } from "./components/logout.js";
 import { Register } from "./components/register.js";
 import { Profile } from "./components/profile.js";
+import { EditProfileForm } from "./components/profile-edit.js";
 import { Start } from "./components/start.js";
 import { Results } from "./components/results.js";
 import { Game } from "./components/game.js";
@@ -104,6 +105,16 @@ const MyApp = () => {
     setState(defaultUser);
   };
 
+  // Helper for when a user edits profile info
+  const handleProfileUpdate = (updatedProfile) => {
+    setState(prevState => {
+      const newState = { ...prevState, ...updatedProfile };
+      // Update localStorage after state has been updated
+      localStorage.setItem("user", JSON.stringify(newState));
+      return newState;
+    });
+  };
+
   return (
     <BrowserRouter>
       <GridBase>
@@ -121,6 +132,14 @@ const MyApp = () => {
           <Route
             path="/profile/:username"
             element={<Profile currentUser={state.username} />}
+          />
+          <Route
+              path="/edit"
+              element={
+                <ReqUser user={state}>
+                  <EditProfileForm currentUser={state} onUpdate={handleProfileUpdate} />
+                </ReqUser>
+              }
           />
           <Route
             path="/start"

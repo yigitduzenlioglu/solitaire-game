@@ -1,6 +1,7 @@
 /* Copyright G. Hemingway, @2023 - All rights reserved */
 "use strict";
 
+import { EditProfileForm } from "./profile-edit.js";
 import React, { Fragment, useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import { Link, useParams } from "react-router-dom";
@@ -66,9 +67,6 @@ const ProfileBlock = (props) => {
 const EditLinkBase = styled.div`
   grid-area: sb;
   display: none;
-  & > a {
-    cursor: not-allowed;
-  }
   @media (min-width: 500px) {
     display: inherit;
   }
