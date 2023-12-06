@@ -1,6 +1,8 @@
 /* Copyright G. Hemingway, 2023 - All rights reserved */
 "use strict";
 
+const {getGitHubUserData} = require("../../github.cjs");
+
 const Joi = require("joi");
 
 const CLIENT_ID = "e0b6b9399f136b75ad88";
@@ -55,22 +57,53 @@ module.exports = (app) => {
 
   app.post("/v1/third_party_session", async (req, res) => {
 
-    const query_params = "?client_id=" + CLIENT_ID + "&client_secret=" + CLIENT_SECRET + "&code=" + req.query.code;
+    const query_params = `client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}&code=${req.body.code}`;
 
-    await fetch("https://github.com/login/oauth/access_token" + query_params, {
-        method: "POST",
-        headers: {
-          "accept": "application/json"
+    let access_token;
+
+    try {
+      const access_token_response = await fetch(
+        `https://github.com/login/oauth/access_token?${query_params}`, 
+        {
+          method: "POST",
+          headers: {
+            "accept": "application/json"
+          }
         }
-      }
-    ).then((response) => {
-      return response.json();
-    }).then((data) => {
-      console.log("access token response", data);
-      res.status(200).json(data);
-    })
+      );
 
-    // await getGitHubUserData(token);
+      access_token = await access_token_response.json()['access_token'];
+      
+      const user_response = await getGitHubUserData(access_token);
+      const gitHub_user = await user_response.json();
+
+      console.log(1);
+      
+      let user = await app.models.User.findOne({ username: gitHub_user.login });
+      
+      console.log(2);
+      if (!user) {
+        let new_user = new app.models.User({ username: gitHub_user.login });
+        await new_user.save();
+        
+        res.status(201).send({ username: gitHub_user.login });
+      }
+      
+      console.log(3);
+      // Regenerate session when signing in to prevent fixation
+      req.session.regenerate(() => {
+        req.session.user = user;
+        console.log(`Session.login success: ${req.session.user.username}`);
+        // If a match, return 201:{ username, primary_email }
+        res.status(200).send({
+          username: user.username,
+          primary_email: "",
+        });
+      });
+
+    } catch {
+      res.status(400).json('invalid credentials');
+    }
   });
 
   /**

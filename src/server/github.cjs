@@ -1,22 +1,19 @@
-export const getGitHubUserData = async () => {
-	const token = 'github token here';
+"use strict";
 
-	await fetch(
+async function getGitHubUserData(access_token) {
+	return await fetch(
 		'https://api.github.com/user', 
 		{
 			method: 'GET',
 			headers: {
-				'Authorization': token
+				'Authorization': `Bearer ${access_token}`,
+				'accept': 'application/json',
 			}
 		}
-	)
-	.then((response) => {
-		return response.json();
-	})
-	.catch((err) => {
-		return 
-	})
-	.then((data) => {
-		// Do something with data here
-	});
+	);
 }
+
+module.exports = {
+	getGitHubUserData: getGitHubUserData,
+};
+  
